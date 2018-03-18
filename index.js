@@ -11,8 +11,8 @@ var app = express();
 app.use(bodyParser.json());
 
 var initialResearchers = [
-    { "name": "Manuel", "surname": "Resinas", "phone": "954556234", "email": "resinas@us.es", "researcherID": "B-3063-2008" },
-    { "name": "Pablo", "surname": "Férnandez", "phone": "954536333", "email": "pablofm@us.es", "researcherID": "E-6362-2010" }
+     { "name": "Manuel", "surname": "Resinas", "researcherID": "B-3063-2008" },
+    { "name": "Pablo", "surname": "Férnandez", "researcherID": "E-6362-2010" }
 ];
 var db = new DataStore({
     filename: dbFileName,
@@ -82,7 +82,6 @@ app.delete(BASE_API_PATH + "/researchers", (req, res) => {
 
     res.sendStatus(200);
 });
-app.listen(process.env.PORT);
 
 app.get(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
     //GET A SINGLE RESEARCH 
@@ -166,3 +165,5 @@ app.put(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
     });
 
 });
+app.use("/", express.static(__dirname+"/public"))
+app.listen(process.env.PORT);
