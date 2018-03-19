@@ -2,7 +2,7 @@
 
 var path = require('path');
 var DataStore = require('nedb');
-var dbFileName = path.join(__dirname, 'Researchers.json');
+var dbFileName = path.join(__dirname, 'researchers.json');
 
 var db = new DataStore({
     filename : dbFileName,
@@ -24,16 +24,16 @@ Researchers.prototype.removeAll = function(callback) {
     return db.remove({},{ multi: true},callback);
 };
 
-Researchers.prototype.get = function(name, callback) {
-    return db.find({name:name}, callback);
+Researchers.prototype.get = function(orcid, callback) {
+    return db.find({orcid:orcid}, callback);
 };
 
-Researchers.prototype.remove = function(name, callback) {
-    return db.remove({name:name},{ multi: true}, callback);
+Researchers.prototype.remove = function(orcid, callback) {
+    return db.remove({orcid:orcid},{ multi: true}, callback);
 };
 
-Researchers.prototype.update = function(name, updatedResearcher, callback) {
-    return db.update({name:name},updatedResearcher,{}, callback);
+Researchers.prototype.update = function(orcid, updatedResearcher, callback) {
+    return db.update({orcid:orcid},updatedResearcher,{}, callback);
 };
 
 module.exports = new Researchers();

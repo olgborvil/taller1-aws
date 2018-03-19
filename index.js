@@ -5,7 +5,7 @@ var bodyParser = require("body-parser");
 var path = require('path');
 var researchers = require("./researchers.js");
 
-var port = (process.env.PORT || 16778);
+var port = (process.env.PORT || 15000);
 var baseAPI = "/api/v1";
 
 var app = express();
@@ -13,83 +13,90 @@ var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 
-researchers.add([{
+/*researchers.add([{
         name: "pepe",
-        phone: "12345",
-        email: "pepe@pepe.com"
+        surname: "pepito",
+        orcid: "c-1234-1307"
     }, {
         name: "luis",
-        phone: "67890",
-        email: "luis@pepe.com"
+        surname: "gómez",
+        orcid: "c-2098-1207"
     }]);
+*/
+app.get(baseAPI + "/researchers", (req, res) => {
+    console.log("GET /researchers");
 
-app.get(baseAPI + "/researchers", (request, response) => {
-    console.log("GET /researchers"); 
-    
-    researchers.allResearchers((err,researchers)=>{
-        response.send(researchers);    
+    researchers.allResearchers((err, researchers) => {
+        res.send(researchers);
     });
 });
 
-app.post(baseAPI + "/researchers", (request, response) => {
-    console.log("POST /researchers");
-    var researcher = request.body;
-    researchers.add(researcher);
-    response.sendStatus(201);
+app.put(baseAPI + "/researchers", (req, res) => {
+    console.log("PUT/researchers");
+    res.sendStatus(405);
+
 });
 
-app.delete(baseAPI + "/researchers", (request, response) => {
+app.post(baseAPI + "/researchers", (req, res) => {
+    console.log("POST /researchers");
+    var researcher = req.body;
+    researchers.add(researcher);
+    res.sendStatus(201);
+});
+
+app.delete(baseAPI + "/researchers", (req, res) => {
     console.log("DELETE /researchers");
 
-    researchers.removeAll((err,numRemoved)=>{
-        console.log("researchers removed:"+numRemoved);
-        response.sendStatus(200);    
+    researchers.removeAll((err, numRemoved) => {
+        console.log("researchers removed:" + numRemoved);
+        res.sendStatus(200);
     });
 
 });
 
-app.get(baseAPI + "/researchers/:name", (request, response) => {
-    console.log("GET /researchers/"+name);
-    var name = request.params.name;
+app.get(baseAPI + "/researchers/:orcid", (req, res) => {
+    console.log("GET /researchers/" + orcid);
+    var orcid = req.params.orcid;
 
-    researchers.get(name,(err,researchers)=>{
+    researchers.get(orcid, (err, researchers) => {
         if (researchers.length === 0) {
-            response.sendStatus(404);
+            res.sendStatus(404);
         }
         else {
-            response.send(researchers[0]);  
+            res.send(researchers[0]);
         }
     });
 });
 
 
-app.delete(baseAPI + "/researchers/:name", (request, response) => {
-    var name = request.params.name;
+app.delete(baseAPI + "/researchers/:orcid", (req, res) => {
+    var orcid = req.params.orcid;
 
-    researchers.remove(name,(err,numRemoved)=>{
-        console.log("researchers removed:"+numRemoved);
-        response.sendStatus(200);    
+    researchers.remove(orcid, (err, numRemoved) => {
+        console.log("researchers removed:" + numRemoved);
+        res.sendStatus(200);
     });
 
-    console.log("DELETE /researchers/" + name);
+    console.log("DELETE /researchers/" + orcid);
 });
 
 
-app.put(baseAPI + "/researchers/:name", (request, response) => {
-    var name = request.params.name;
-    var updatedResearcher = request.body;
+app.put(baseAPI + "/researchers/:orcid", (req, res) => {
+    var orcid = req.params.orcid;
+    var updatedResearcher = req.body;
 
-    researchers.update(name, updatedResearcher ,(err,numUpdates) => {
-        console.log("researchers updated:"+numUpdates);
+    researchers.update(orcid, updatedResearcher, (err, numUpdates) => {
+        console.log("researchers updated:" + numUpdates);
         if (numUpdates === 0) {
-            response.sendStatus(404);    
-        } else {
-            response.sendStatus(200);    
+            res.sendStatus(404);
         }
-        
+        else {
+            res.sendStatus(200);
+        }
+
     });
 
-    console.log("UPDATE /researchers/"+name);
+    console.log("UPDATE /researchers/" + orcid);
 });
 
 
