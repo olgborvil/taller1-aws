@@ -1,169 +1,98 @@
+'use strict';
+
 var express = require("express");
 var bodyParser = require("body-parser");
-var DataStore = require("nedb");
+var path = require('path');
+var researchers = require("./researchers.js");
 
-var mongo = require('mongodb');
+var port = (process.env.PORT || 16778);
+var baseAPI = "/api/v1";
 
-console.log("Starting server!");
-var BASE_API_PATH = "/api/v1";
-var dbFileName = __dirname + "/researchers.json";
 var app = express();
+
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 
-var initialResearchers = [
-     { "name": "Manuel", "surname": "Resinas", "researcherID": "B-3063-2008" },
-    { "name": "Pablo", "surname": "Férnandez", "researcherID": "E-6362-2010" }
-];
-var db = new DataStore({
-    filename: dbFileName,
-    autoload: true
-});
+researchers.add([{
+        name: "pepe",
+        phone: "12345",
+        email: "pepe@pepe.com"
+    }, {
+        name: "luis",
+        phone: "67890",
+        email: "luis@pepe.com"
+    }]);
 
-db.find({}, (err, researchers) => {
-    if (err) {
-        console.error("Error accesing DB");
-        process.exit(1);
-    }
-    else {
-        if (researchers.length == 0) {
-            console.log("Empty DB, initializaing data...");
-            db.insert(initialResearchers);
-        }
-        else {
-            console.log("Loaded DB with " + researchers.length + " researchers.");
-        }
-
-    }
-});
-
-app.get(BASE_API_PATH + "/researchers", (req, res) => {
-    //Obtain all researchers
-    console.log(Date() + " GET RESEARCHER");
-    db.find({}, (err, researchers) => {
-        if (err) {
-            console.error("Error accesing DB");
-            res.sendStatus(500);
-
-        }
-        else {
-
-
-            res.send(researchers.map((researcher) => {
-                delete researcher._id;
-                return researcher;
-            }));
-
-
-        }
+app.get(baseAPI + "/researchers", (request, response) => {
+    console.log("GET /researchers"); 
+    
+    researchers.allResearchers((err,researchers)=>{
+        response.send(researchers);    
     });
-
-
-
-});
-app.post(BASE_API_PATH + "/researchers", (req, res) => {
-    //Create a new researcher
-    console.log(Date() + " POST RESEARCHER")
-    var researcher = req.body;
-    db.insert(researcher);
-    res.sendStatus(201);
-
-});
-app.put(BASE_API_PATH + "/researchers", (req, res) => {
-    //Forbidden
-    console.log(Date() + " PUT RESEARCHER")
-    res.sendStatus(405);
-
-});
-app.delete(BASE_API_PATH + "/researchers", (req, res) => {
-    //Remove all researchers
-    console.log(Date() + " REMOVE RESEARCHERS");
-    db.remove({});
-
-
-    res.sendStatus(200);
 });
 
-app.get(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
-    //GET A SINGLE RESEARCH 
-     var id = req.params.researcherID;
-    console.log(Date() + " GET A  RESEARCHER WHOSE ID IS"+id);
-   
-    db.find({ "researcherID": id }, (err, researchers) => {
-        if (err) {
-            console.error("Error accesing DB");
-            res.sendStatus(500);
+app.post(baseAPI + "/researchers", (request, response) => {
+    console.log("POST /researchers");
+    var researcher = request.body;
+    researchers.add(researcher);
+    response.sendStatus(201);
+});
 
-        }
-        else {
-            if (researchers.length > 1) {
-                console.warn("Inconsistent DB: duplicated researcherID");
-            }
-            res.send(researchers.map((researcher) => {
-                delete researcher._id;
-                return researcher;
-            })[0]);
-        }
+app.delete(baseAPI + "/researchers", (request, response) => {
+    console.log("DELETE /researchers");
+
+    researchers.removeAll((err,numRemoved)=>{
+        console.log("researchers removed:"+numRemoved);
+        response.sendStatus(200);    
     });
 
 });
-app.delete(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
-    //DELETE A SINGLE RESEARCH 
-     var id = req.params.researcherID;
-    console.log(Date() + " GET A  RESEARCHER WHOSE ID IS"+id);
-   
-    db.remove({ "researcherID": id },{}, (err, numRemoved) => {
-        if (err) {
-            console.error("Error accesing DB");
-            res.sendStatus(500);
 
+app.get(baseAPI + "/researchers/:name", (request, response) => {
+    console.log("GET /researchers/"+name);
+    var name = request.params.name;
+
+    researchers.get(name,(err,researchers)=>{
+        if (researchers.length === 0) {
+            response.sendStatus(404);
         }
         else {
-            if (numRemoved > 1) {
-                console.warn("Inconsistent DB: duplicated researcherID");
-            }else if(numRemoved ==0) {
-            res.sendStatus(404);
-            }else{
-                 res.sendStatus(200);
-            }
-            
+            response.send(researchers[0]);  
         }
     });
-
 });
-app.post(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
-    //Forbidden
-    console.log(Date() + "POST RESEARCHER")
-    res.sendStatus(405);
 
-});
-app.put(BASE_API_PATH + "/researchers/:researcherID", (req, res) => {
-    //DELETE A SINGLE RESEARCH 
-     var id = req.params.researcherID;
-     var updateResearcher = req.body;
-    console.log(Date() + " GET A  RESEARCHER WHOSE ID IS"+id);
-   
-    db.update({ "researcherID": id },{updateResearcher}, (err, numUpdated) => {
-        if(id!=updateResearcher.researcherID){
-            res.sendStatus(409);
-            return;
-        }
-        if (err) {
-            console.error("Error accesing DB");
-            res.sendStatus(500);
 
-        }
-        else {
-            if (numUpdated > 1) {
-                console.warn("Inconsistent DB: duplicated researcherID");
-            }else if(numUpdated ==0) {
-            res.sendStatus(404);
-            }else{
-                 res.sendStatus(200);
-            }
-            
-        }
+app.delete(baseAPI + "/researchers/:name", (request, response) => {
+    var name = request.params.name;
+
+    researchers.remove(name,(err,numRemoved)=>{
+        console.log("researchers removed:"+numRemoved);
+        response.sendStatus(200);    
     });
 
+    console.log("DELETE /researchers/" + name);
 });
-app.use("/", express.static(__dirname+"/public"))
-app.listen(process.env.PORT);
+
+
+app.put(baseAPI + "/researchers/:name", (request, response) => {
+    var name = request.params.name;
+    var updatedResearcher = request.body;
+
+    researchers.update(name, updatedResearcher ,(err,numUpdates) => {
+        console.log("researchers updated:"+numUpdates);
+        if (numUpdates === 0) {
+            response.sendStatus(404);    
+        } else {
+            response.sendStatus(200);    
+        }
+        
+    });
+
+    console.log("UPDATE /researchers/"+name);
+});
+
+
+app.listen(port, () => {
+    console.log("Server with GUI up and running!!");
+});
